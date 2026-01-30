@@ -1,6 +1,12 @@
-# AWS EKS Infrastructure with Terraform
+# AWS EKS Infrastructure with OpenTofu
+
+![OpenTofu](https://img.shields.io/badge/OpenTofu-1.8+-844fba?logo=opentofu&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-EKS-FF9900?logo=amazonaws&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-1.31-326CE5?logo=kubernetes&logoColor=white)
 
 This project creates AWS EKS (Kubernetes) infrastructure using OpenTofu.
+
+**📍 Default Region:** `eu-north-1` (configurable via `terraform.tfvars`)
 
 ## 📁 Project Structure
 
@@ -15,36 +21,57 @@ This project creates AWS EKS (Kubernetes) infrastructure using OpenTofu.
 │   ├── eks/               # EKS cluster module
 │   └── vpc/               # VPC module
 └── scripts/
-    ├── start.ps1          # Automated setup script for Windows
-    └── start.sh           # Automated setup script for Linux/Mac
+    └── start.ps1          # Automated setup script for Windows, Linux and Mac
+
 ```
 
 ## 📋 Prerequisites
 
 - AWS CLI configured with credentials
-- OpenTofu or Terraform installed
-- PowerShell (for Windows users)
+- OpenTofu installed (v1.6.0 or higher)
+- Command line access (PowerShell, Bash, or Zsh)
+
+**⏱️ Estimated Total Deployment Time:** ~12-15 minutes
 
 ## 🚀 Quick Start
 
-### Option 1: Automated Setup (Recommended)
+### Option 1: Automated Setup with CI/CD (Recommended)
 
-Run the setup script that does everything automatically:
+This project uses a hybrid deployment approach:
+- **Bootstrap**: Deployed manually using `start.ps1`
+- **EKS Cluster**: Deployed via GitHub Actions CI/CD pipeline
 
-**For Windows (PowerShell):**
+#### Step 1: Deploy Bootstrap (Manual)
+
+Run the setup script to deploy the bootstrap infrastructure (S3 bucket, DynamoDB table, IAM roles):
+
 ```powershell
 .\scripts\start.ps1
 ```
 
-**For Linux/Mac (Bash):**
-```bash
-bash scripts/start.sh
-```
+When prompted:
+- Select **Yes** for bootstrap deployment
+- Select **No** for environment deployments (these will be handled by GitHub Actions)
 
-This script will:
-1. Create S3 bucket and DynamoDB table for Terraform state
-2. Create IAM roles for Terraform
-3. Deploy EKS cluster in dev environment
+**⏱️ Estimated Time:** ~2-3 minutes
+
+#### Step 2: Deploy EKS Cluster (CI/CD)
+
+After bootstrap completes, the GitHub Actions workflow (`.github/workflows/tofu-cd.yml`) will automatically:
+1. Test AWS connection and state backend
+2. Initialize OpenTofu
+3. Plan the infrastructure changes
+4. Apply the EKS cluster configuration
+
+**⏱️ Estimated Time:** ~10-12 minutes
+
+You can monitor the deployment progress in the **Actions** tab of your GitHub repository.
+
+---
+
+### Option 2: Fully Manual Setup
+
+If you prefer to run all commands manually without CI/CD, see the [Manual Setup](#-manual-setup-step-by-step) section below.
 
 ---
 
@@ -54,16 +81,16 @@ If you prefer to run commands manually, follow these steps:
 
 ### Step 1: Deploy Bootstrap Infrastructure
 
-Bootstrap creates the S3 bucket and DynamoDB table for storing Terraform state.
+Bootstrap creates the S3 bucket and DynamoDB table for storing OpenTofu state.
 
-```powershell
+```bash
 # Go to bootstrap folder
 cd bootstrap
 
-# Initialize Terraform
+# Initialize OpenTofu
 tofu init
 
-# Format all Terraform files (optional but recommended)
+# Format all OpenTofu files (optional but recommended)
 tofu fmt -recursive
 
 # Check what will be created
@@ -73,23 +100,25 @@ tofu plan
 tofu apply
 ```
 
+**⏱️ Estimated Time:** ~2-3 minutes
+
 **What this creates:**
-- S3 bucket for Terraform state files
+- S3 bucket for OpenTofu state files
 - DynamoDB table for state locking
-- IAM roles for Terraform operations
+- IAM roles for OpenTofu operations
 
 ### Step 2: Deploy Dev Environment
 
 After bootstrap is complete, deploy the dev environment:
 
-```powershell
+```bash
 # Go to dev environment folder
-cd ..\envs\dev
+cd ../envs/dev
 
 # Initialize
 tofu init
 
-# Format all Terraform files (optional but recommended)
+# Format all OpenTofu files (optional but recommended)
 tofu fmt -recursive
 
 # Check what will be created
@@ -98,6 +127,8 @@ tofu plan
 # Create the EKS cluster
 tofu apply
 ```
+
+**⏱️ Estimated Time:** ~10-12 minutes
 
 **What this creates:**
 - VPC configuration (uses existing VPC)
@@ -110,7 +141,7 @@ tofu apply
 
 After deployment completes, you can see the outputs:
 
-```powershell
+```bash
 tofu output
 ```
 
@@ -127,8 +158,8 @@ This shows:
 
 If you make changes to the code:
 
-```powershell
-cd envs\dev
+```bash
+cd envs/dev
 tofu plan
 tofu apply
 ```
@@ -137,13 +168,13 @@ tofu apply
 
 To delete everything (be careful!):
 
-```powershell
+```bash
 # Delete dev environment first
-cd envs\dev
+cd envs/dev
 tofu destroy
 
 # Then delete bootstrap (do this last!)
-cd ..\..\bootstrap
+cd ../../bootstrap
 tofu destroy
 ```
 
@@ -166,8 +197,8 @@ tofu destroy
 
 If you see "Error acquiring the state lock":
 
-```powershell
-cd envs\dev
+```bash
+cd envs/dev
 tofu force-unlock <LOCK_ID>
 ```
 
@@ -177,7 +208,7 @@ Replace `<LOCK_ID>` with the ID shown in the error message.
 
 If IAM roles already exist in AWS:
 
-```powershell
+```bash
 # Import the existing roles
 tofu import module.eks.aws_iam_role.default_cluster <role-name>
 tofu import module.eks.aws_iam_role.default_node <role-name>
@@ -187,7 +218,7 @@ tofu import module.eks.aws_iam_role.default_node <role-name>
 
 If you get "outputs is object with no attributes":
 
-```powershell
+```bash
 # The bootstrap hasn't been applied yet
 cd bootstrap
 tofu apply
@@ -198,7 +229,7 @@ tofu apply
 ## 📞 Need Help?
 
 - Check the error message carefully
-- Run `tofu plan` to see what Terraform wants to do
+- Run `tofu plan` to see what OpenTofu wants to do
 - Make sure bootstrap is deployed first
 - Check that AWS credentials are configured
 
@@ -209,13 +240,13 @@ tofu apply
 After deployment:
 
 1. Configure kubectl to access your cluster:
-   ```bash
-   aws eks update-kubeconfig --name <cluster-name> --region <region>
-   ```
+  ```bash
+  aws eks update-kubeconfig --name <cluster-name> --region <region>
+  ```
 
 2. Verify cluster access:
-   ```bash
-   kubectl get nodes
-   ```
+  ```bash
+  kubectl get nodes
+  ```
 
 3. Deploy your applications to the cluster!

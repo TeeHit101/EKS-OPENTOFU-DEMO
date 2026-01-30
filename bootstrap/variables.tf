@@ -7,7 +7,7 @@ variable "region" {
 variable "bucket_name_prefix" {
   description = "Prefix for state bucket. Combined with account-id automatically."
   type        = string
-  default     = "devops-tf-state"
+  default     = "devops-team-tf-state"
 }
 
 variable "create_kms" {
@@ -19,13 +19,13 @@ variable "create_kms" {
 variable "dynamodb_table_name" {
   description = "Name of DynamoDB table for state locking"
   type        = string
-  default     = "terraform-devops-tf-lock"
+  default     = "terraform-devops-team-lock"
 }
 
 variable "org_prefix" {
-  description = "Prefix for tags/names (e.g. devops, mycompany)"
+  description = "Prefix for tags/names (e.g. visma)"
   type        = string
-  default     = "devops-tf"
+  default     = "devops-team"
 }
 
 variable "environment" {
@@ -34,8 +34,8 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "trusted_principal_arns" {
+variable "github_repositories" {
   type        = list(string)
-  description = "Entities that can assume Terraform roles (e.g. SSO, GitHub OIDC, etc.). Defaults to current IAM role if empty."
+  description = "List of GitHub repositories allowed to assume roles via OIDC. Format: 'repo:org/repo:*' or 'repo:org/repo:ref:refs/heads/main'"
   default     = []
 }

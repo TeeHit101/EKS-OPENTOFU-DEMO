@@ -32,7 +32,7 @@ module "eks" {
         "team"     = "devops"
       }
     }
-    # Node 2: Spot instances 
+    # Node 2: Spot instances
     spot = {
       desired_size   = 1
       min_size       = 0

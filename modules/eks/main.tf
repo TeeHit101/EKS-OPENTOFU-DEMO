@@ -18,7 +18,7 @@ locals {
 
 # EKS cluster role
 resource "aws_iam_role" "default_cluster" {
-  name               = "devops-lia-team-${var.name}-cluster-role-${random_id.suffix.hex}"
+  name               = "devops-${var.name}-cluster-role-${random_id.suffix.hex}"
   assume_role_policy = data.aws_iam_policy_document.eks_assume.json
   tags               = local.common_tags
 }
@@ -40,7 +40,7 @@ resource "aws_iam_role_policy_attachment" "cluster_policy" {
 
 # Node group role
 resource "aws_iam_role" "default_node" {
-  name               = "devops-lia-team-${var.name}-node-role-${random_id.suffix.hex}"
+  name               = "devops-${var.name}-node-role-${random_id.suffix.hex}"
   assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
   tags               = local.common_tags
 }
@@ -75,7 +75,7 @@ resource "aws_iam_role_policy_attachment" "ecr_ro" {
 # ========================================
 
 resource "aws_security_group" "default" {
-  name        = "${var.name}-cluster-sg-${random_id.suffix.hex}"
+  name        = "devops-${var.name}-cluster-sg-${random_id.suffix.hex}"
   description = "EKS cluster security group"
   vpc_id      = var.vpc_id
   tags        = local.common_tags

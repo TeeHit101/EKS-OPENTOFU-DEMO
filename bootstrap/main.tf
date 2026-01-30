@@ -1,3 +1,14 @@
+terraform {
+  required_version = "~> 1.11"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "= 6.28.0"
+    }
+  }
+}
+
 provider "aws" {
   region = var.region
 }
@@ -10,13 +21,16 @@ data "aws_iam_session_context" "current" {
 }
 
 locals {
-  bucket_name = "${var.bucket_name_prefix}-${data.aws_caller_identity.current.account_id}"
-  # Use current role ARN if trusted_principal_arns is empty
-  trusted_principals = length(var.trusted_principal_arns) > 0 ? var.trusted_principal_arns : [data.aws_iam_session_context.current.issuer_arn]
+  bucket_name        = "${var.bucket_name_prefix}-${data.aws_caller_identity.current.account_id}"
+  trusted_principals = length(var.github_repositories) > 0 ? var.github_repositories : [data.aws_iam_session_context.current.issuer_arn]
+
+  # GitHub OIDC Configuration - Only allow the current environment
+  github_repositories = ["repo:hrplus/platform-infra:environment:${var.environment}"]
+
   tags = {
     Owner       = var.org_prefix
     ManagedBy   = "terraform-bootstrap"
-    Environment = "dev" //  "test", "stage", "prod"
+    Environment = var.environment
   }
 }
 
@@ -86,29 +100,68 @@ resource "aws_dynamodb_table" "tf_lock" {
   tags = local.tags
 }
 
-# IAM Roles for Terrlocal.trusted_principal
-data "aws_iam_policy_document" "assume_role" {
+# GitHub OIDC Provider
+resource "aws_iam_openid_connect_provider" "github" {
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+
+  tags = merge(
+    local.tags,
+    {
+      Name = "${var.org_prefix}-github-oidc"
+    }
+  )
+}
+
+# IAM Role for GitHub Actions with OIDC trust
+data "aws_iam_policy_document" "github_oidc_assume_role" {
   statement {
-    sid     = "AllowTrustedPrincipals"
-    actions = ["sts:AssumeRole"]
+    sid     = "AllowGitHubOIDC"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
 
     principals {
-      type        = "AWS"
-      identifiers = local.trusted_principals
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.github.arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = local.github_repositories
     }
   }
 }
 
 resource "aws_iam_role" "plan" {
-  name               = "TerraformPlanOnly"
-  assume_role_policy = data.aws_iam_policy_document.assume_role.json
-  description        = "Read-only Terraform planning role"
+  name               = "GitHubActionsTerraformPlan"
+  assume_role_policy = data.aws_iam_policy_document.github_oidc_assume_role.json
+  description        = "GitHub Actions OIDC role for Terraform planning"
+  tags               = local.tags
 }
 
 resource "aws_iam_role" "apply" {
-  name               = "TerraformApplyOnly"
-  assume_role_policy = data.aws_iam_policy_document.assume_role.json
-  description        = "Terraform apply role with write permissions"
+  name               = "GitHubActionsTerraformApply"
+  assume_role_policy = data.aws_iam_policy_document.github_oidc_assume_role.json
+  description        = "GitHub Actions OIDC role for Terraform apply"
+  tags               = local.tags
+}
+
+# Attach AdministratorAccess to Apply role for infrastructure management
+resource "aws_iam_role_policy_attachment" "apply_admin" {
+  role       = aws_iam_role.apply.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# Attach ReadOnlyAccess to Plan role
+resource "aws_iam_role_policy_attachment" "plan_readonly" {
+  role       = aws_iam_role.plan.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
 
 data "aws_iam_policy_document" "state_access" {

@@ -12,4 +12,4 @@ output "eks_oidc_provider" {
 
 output "vpc_id" {
   value = module.vpc.vpc_id
-}                                                 
+}

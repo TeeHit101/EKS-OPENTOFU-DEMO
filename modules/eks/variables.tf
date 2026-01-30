@@ -62,7 +62,7 @@ variable "endpoint_public_access" {
   default     = true
 }
 
-# Access Logic 
+# Access Logic
 variable "enable_cluster_creator_admin_permissions" {
   type    = bool
   default = true
