@@ -1,0 +1,41 @@
+name: 'OpenTofu Cleanup'
+
+on:
+  workflow_dispatch:  # Manual trigger button
+
+env:
+  AWS_REGION: eu-north-1
+
+permissions:
+  contents: read
+  id-token: write  # Required for OIDC authentication
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    environment: test
+
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5.1.1
+        with:
+          role-to-assume: arn:aws:iam::936777225880:role/GitHubActionsTofuApply
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: OpenTofu - Setup Tofu
+        uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f  # v1.0.8
+        with:
+          tofu_version: '1.11.2'
+
+      - name: Execute OpenTofu init in envs/test
+        working-directory: envs/test
+        run: |
+          tofu init
+
+      - name: Execute OpenTofu Destroy in envs/test
+        working-directory: envs/test
+        run: |
+          tofu destroy -auto-approve

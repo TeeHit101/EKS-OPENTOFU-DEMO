@@ -1,0 +1,67 @@
+name: 'OpenTofu CI/CD'
+
+on:
+  push:
+    branches:
+      - #main
+
+env:
+  AWS_REGION: eu-north-1
+
+permissions:
+  contents: read
+  id-token: write  # Required for OIDC authentication
+
+jobs:
+  test-connection:
+    runs-on: ubuntu-latest
+    environment: test
+
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5.1.1
+        with:
+          role-to-assume: arn:aws:iam::936777225880:role/GitHubActionsTofuPlan
+          aws-region: ${{ env.AWS_REGION }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test-connection  # Ensures the deploy job only runs if test-connection succeeds
+    environment: test
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5.1.1
+        with:
+          role-to-assume: arn:aws:iam::936777225880:role/GitHubActionsTofuApply
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: OpenTofu - Setup Tofu
+        uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f  # v1.0.8
+        with:
+          tofu_version: '1.11.2'
+
+      - name: Execute OpenTofu init in envs/test
+        working-directory: envs/test
+        run: |
+          tofu init
+
+      - name: Execute OpenTofu Plan in envs/test
+        working-directory: envs/test
+        run: |
+          tofu plan
+
+      - name: Install Helm
+        uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814  # v4.2.0
+        with:
+          version: 'v3.16.3'
+
+      - name: Execute OpenTofu Apply in envs/test
+        working-directory: envs/test
+        run: |
+          tofu apply -auto-approve

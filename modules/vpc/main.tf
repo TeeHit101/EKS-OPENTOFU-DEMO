@@ -1,40 +1,30 @@
-# Fetch existing VPC
-data "aws_vpc" "vpc" {
-  id = var.vpc_id
+resource "aws_vpc" "main" {
+  cidr_block           = var.primary_cidr
+  enable_dns_hostnames = var.enable_dns_hostnames
+  enable_dns_support   = var.enable_dns_support
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = var.name
+    }
+  )
 }
 
-# Validate that private subnets exist
-data "aws_subnet" "private" {
-  count = length(var.private_subnet_ids)
-  id    = var.private_subnet_ids[count.index]
+resource "aws_vpc_ipv4_cidr_block_association" "secondary" {
+  for_each = var.secondary_cidrs
+
+  vpc_id     = aws_vpc.main.id
+  cidr_block = each.value.cidr_block
 }
 
-# Validate that public subnets exist
-data "aws_subnet" "public" {
-  count = length(var.public_subnet_ids)
-  id    = var.public_subnet_ids[count.index]
-}
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
 
-# Tag public subnets for EKS LoadBalancer support
-resource "aws_ec2_tag" "public_subnet_elb" {
-  count       = var.manage_subnet_tags ? length(var.public_subnet_ids) : 0
-  resource_id = var.public_subnet_ids[count.index]
-  key         = "kubernetes.io/role/elb"
-  value       = "1"
-}
-
-# Tag private subnets for EKS internal LoadBalancer support
-resource "aws_ec2_tag" "private_subnet_elb" {
-  count       = var.manage_subnet_tags ? length(var.private_subnet_ids) : 0
-  resource_id = var.private_subnet_ids[count.index]
-  key         = "kubernetes.io/role/internal-elb"
-  value       = "1"
-}
-
-# Tag all subnets with cluster ownership
-resource "aws_ec2_tag" "subnet_cluster_shared" {
-  count       = var.manage_subnet_tags ? length(concat(var.private_subnet_ids, var.public_subnet_ids)) : 0
-  resource_id = concat(var.private_subnet_ids, var.public_subnet_ids)[count.index]
-  key         = "kubernetes.io/cluster/${var.cluster_name}"
-  value       = "shared"
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.name}-igw"
+    }
+  )
 }

@@ -2,13 +2,18 @@ variable "name" {
   type = string
 }
 
+variable "org_prefix" {
+  description = "Organization prefix for resource naming"
+  type        = string
+}
+
 variable "region" {
   type = string
 }
 
 variable "cluster_version" {
   type    = string
-  default = "1.34"
+  default = "1.35"
 }
 
 variable "vpc_id" {
@@ -28,26 +33,14 @@ variable "tags" {
   default = {}
 }
 
-variable "node_groups" {
-  description = "Map of node group configurations"
+variable "system_node_groups" {
+  description = "Map of system node group sizing configurations. Labels, taints and capacity type are applied automatically."
   type = map(object({
-    desired_size    = number
-    min_size        = number
-    max_size        = number
-    instance_types  = list(string)
-    capacity_type   = optional(string, "ON_DEMAND")
-    ami_type        = optional(string, "AL2023_x86_64_STANDARD")
-    max_unavailable = optional(number, 1)
-    labels          = optional(map(string))
+    desired_size   = number
+    min_size       = number
+    max_size       = number
+    instance_types = list(string)
   }))
-  default = {
-    default = {
-      desired_size   = 2
-      min_size       = 1
-      max_size       = 3
-      instance_types = ["t3.medium"]
-    }
-  }
 }
 
 variable "endpoint_private_access" {
@@ -62,14 +55,25 @@ variable "endpoint_public_access" {
   default     = true
 }
 
-# Access Logic
-variable "enable_cluster_creator_admin_permissions" {
-  type    = bool
-  default = true
-}
-
 variable "access_entries" {
   description = "Map of access entries to add to the cluster"
   type        = any
+  default     = {}
+}
+
+variable "karpenter" {
+  description = "Karpenter configuration"
+  type = object({
+    chart_version          = optional(string, "1.8.6")
+    additional_helm_values = optional(map(any), {})
+  })
+  default = {
+    chart_version          = "1.8.6"
+    additional_helm_values = {}
+  }
+}
+
+variable "external_secrets" {
+  description = "Configuration for the External Secrets Operator"
   default     = {}
 }
