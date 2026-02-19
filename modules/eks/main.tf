@@ -245,3 +245,17 @@ module "eso" {
     aws_eks_node_group.default,
   ]
 }
+
+module "addons" {
+  source = "./addons"
+
+  cluster_name       = aws_eks_cluster.default.name
+  kms_key_arn        = module.kms.key_arn
+  system_node_groups = local.system_node_group_names
+  tags               = local.common_tags
+
+  depends_on = [
+    aws_eks_node_group.default,
+    aws_eks_cluster.default
+  ]
+}

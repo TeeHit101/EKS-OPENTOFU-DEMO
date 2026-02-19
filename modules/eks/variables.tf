@@ -61,18 +61,6 @@ variable "access_entries" {
   default     = {}
 }
 
-variable "karpenter" {
-  description = "Karpenter configuration"
-  type = object({
-    chart_version          = optional(string, "1.8.6")
-    additional_helm_values = optional(map(any), {})
-  })
-  default = {
-    chart_version          = "1.8.6"
-    additional_helm_values = {}
-  }
-}
-
 variable "external_secrets" {
   description = "Configuration for the External Secrets Operator"
   default     = {}
