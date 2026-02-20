@@ -7,7 +7,7 @@ variable "region" {
 variable "bucket_name_prefix" {
   description = "Prefix for state bucket. Combined with account-id automatically."
   type        = string
-  default     = "devops-team-tf-state"
+  default     = "tf-state"
 }
 
 variable "create_kms" {
@@ -19,19 +19,19 @@ variable "create_kms" {
 variable "dynamodb_table_name" {
   description = "Name of DynamoDB table for state locking"
   type        = string
-  default     = "terraform-devops-team-lock"
+  default     = "opentofu-lock"
 }
 
 variable "org_prefix" {
-  description = "Prefix for tags/names (e.g. visma)"
+  description = "Prefix for tags/names"
   type        = string
-  default     = "devops-team"
+  default     = "examen"
 }
 
 variable "environment" {
   description = "Environment for tags/names (e.g. dev, prod)"
   type        = string
-  default     = "dev"
+  default     = "test"
 }
 
 variable "github_repositories" {

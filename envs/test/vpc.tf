@@ -40,8 +40,5 @@ module "vpc" {
     single_nat_gateway = true # standard single NAT Gateway setup for test environment
   }
 
-  # EKS cluster name for subnet tagging
-  eks_cluster_names = [local.eks_name]
-
   tags = local.common_tags
 }

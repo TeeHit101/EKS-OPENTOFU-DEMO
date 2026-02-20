@@ -12,6 +12,6 @@ module "eks" {
   # Node groups configuration
   system_node_groups = var.system_node_groups
 
-  # Access entries from terraform.tfvars (Least Privilege Principle)
+  # Access entries from opentofu.tfvars (Least Privilege Principle)
   access_entries = var.eks_access_entries
 }

@@ -18,10 +18,10 @@ terraform {
 
   # Backend configuration for remote state
   backend "s3" {
-    bucket         = "devops-team-tf-state-936777225880"
-    key            = "test/terraform.tfstate"
+    bucket         = "tf-state-936777225880"
+    key            = "test/opentofu.tfstate"
     region         = "eu-north-1"
-    dynamodb_table = "terraform-devops-team-lock"
+    dynamodb_table = "opentofu-locks"
     encrypt        = true
   }
 }

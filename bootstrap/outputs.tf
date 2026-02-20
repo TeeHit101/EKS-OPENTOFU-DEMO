@@ -12,11 +12,11 @@ output "github_oidc_provider_arn" {
 }
 
 output "github_plan_role_arn" {
-  description = "ARN of the GitHub Actions Terraform plan role"
+  description = "ARN of the GitHub Actions OpenTofu plan role"
   value       = aws_iam_role.plan.arn
 }
 
 output "github_apply_role_arn" {
-  description = "ARN of the GitHub Actions Terraform apply role"
+  description = "ARN of the GitHub Actions OpenTofu apply role"
   value       = aws_iam_role.apply.arn
 }
