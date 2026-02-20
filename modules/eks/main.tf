@@ -232,6 +232,30 @@ resource "aws_eks_access_policy_association" "default" {
   depends_on = [aws_eks_access_entry.default]
 }
 
+# Tag subnets with the actual cluster name (including random suffix) after it is known.
+# This cannot be done in the VPC module since the suffix is not known at plan time.
+resource "aws_ec2_tag" "private_subnet_cluster" {
+  for_each    = { for idx, id in var.private_subnet_ids : tostring(idx) => id }
+  resource_id = each.value
+  key         = "kubernetes.io/cluster/${aws_eks_cluster.default.name}"
+  value       = "shared"
+}
+
+resource "aws_ec2_tag" "public_subnet_cluster" {
+  for_each    = { for idx, id in var.public_subnet_ids : tostring(idx) => id }
+  resource_id = each.value
+  key         = "kubernetes.io/cluster/${aws_eks_cluster.default.name}"
+  value       = "shared"
+}
+
+module "kms" {
+  source = "./kms"
+
+  cluster_name = "${var.org_prefix}-${var.name}"
+  region       = var.region
+  tags         = local.common_tags
+}
+
 module "eso" {
   source = "./eso"
 
@@ -250,12 +274,13 @@ module "addons" {
   source = "./addons"
 
   cluster_name       = aws_eks_cluster.default.name
-  kms_key_arn        = module.kms.key_arn
   system_node_groups = local.system_node_group_names
+  kms_key_arn        = module.kms.key_arn
   tags               = local.common_tags
 
   depends_on = [
     aws_eks_node_group.default,
-    aws_eks_cluster.default
+    aws_eks_cluster.default,
+    module.kms,
   ]
 }

@@ -3,7 +3,7 @@ name: 'OpenTofu CI/CD'
 on:
   push:
     branches:
-      - #main
+      - main
 
 env:
   AWS_REGION: eu-north-1
