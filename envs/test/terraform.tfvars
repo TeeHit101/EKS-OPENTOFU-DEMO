@@ -8,4 +8,3 @@ system_node_groups = {
     instance_types = ["t3.medium"]
   }
 }
-
