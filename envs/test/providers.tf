@@ -21,7 +21,7 @@ terraform {
     bucket         = "tf-state-936777225880"
     key            = "test/opentofu.tfstate"
     region         = "eu-north-1"
-    dynamodb_table = "opentofu-locks"
+    dynamodb_table = "opentofu-lock"
     encrypt        = true
   }
 }

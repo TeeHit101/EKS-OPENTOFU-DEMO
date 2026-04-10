@@ -2,6 +2,32 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
+locals {
+  tolerations = length(var.system_node_group_names) > 0 ? [
+    {
+      key      = "CriticalAddonsOnly"
+      operator = "Exists"
+    }
+  ] : []
+
+  affinity = length(var.system_node_group_names) > 0 ? {
+    nodeAffinity = {
+      requiredDuringSchedulingIgnoredDuringExecution = {
+        nodeSelectorTerms = [
+          {
+            matchExpressions = [
+              {
+                key      = "node_group"
+                operator = "In"
+                values   = var.system_node_group_names
+              }
+            ]
+          }
+        ]
+      }
+    }
+  } : {}
+}
 # IAM Policy
 resource "aws_iam_policy" "eso_policy" {
   name        = "${var.cluster_name}-eso-policy-${random_id.suffix.hex}"
@@ -60,14 +86,24 @@ resource "helm_release" "external_secrets" {
   namespace        = var.namespace
   create_namespace = true
 
-  set {
-    name  = "serviceAccount.create"
-    value = "true"
-  }
-  set {
-    name  = "serviceAccount.name"
-    value = var.service_account_name
-  }
+  values = [
+    yamlencode({
+      serviceAccount = {
+        create = true
+        name   = var.service_account_name
+      }
+      tolerations = local.tolerations
+      affinity    = local.affinity
+      webhook = {
+        tolerations = local.tolerations
+        affinity    = local.affinity
+      }
+      certController = {
+        tolerations = local.tolerations
+        affinity    = local.affinity
+      }
+    })
+  ]
 
   depends_on = [aws_iam_role_policy_attachment.attach]
 }

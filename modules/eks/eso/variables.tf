@@ -44,3 +44,9 @@ variable "versions" {
   type        = string
   default     = "2.0.0"
 }
+
+variable "system_node_group_names" {
+  description = "List of system node group names"
+  type        = list(string)
+  default     = []
+}

@@ -259,10 +259,11 @@ module "kms" {
 module "eso" {
   source = "./eso"
 
-  cluster_name  = aws_eks_cluster.default.name
-  oidc_provider = aws_iam_openid_connect_provider.default
-  region        = var.region
-  tags          = local.common_tags
+  cluster_name            = aws_eks_cluster.default.name
+  oidc_provider           = aws_iam_openid_connect_provider.default
+  region                  = var.region
+  system_node_group_names = local.system_node_group_names
+  tags                    = local.common_tags
 
   depends_on = [
     aws_eks_cluster.default,

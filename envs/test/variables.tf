@@ -22,7 +22,8 @@ variable "environment" {
 variable "system_node_groups" {
   description = "Map of system node group sizing configurations"
   type        = any
-}
+  default     = {}
+  }
 
 variable "karpenter" {
   description = "Karpenter configuration passed to the karpenter module"
