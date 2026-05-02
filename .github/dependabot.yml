@@ -1,0 +1,28 @@
+version: 2
+updates:
+  # GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Terraform/OpenTofu updates for each environment and module
+  - package-ecosystem: "opentofu"
+    directory: "/bootstrap"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "opentofu"
+    directory: "/envs/test"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "opentofu"
+    directory: "/modules/eks"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "opentofu"
+    directory: "/modules/eks/eso"
+    schedule:
+      interval: "weekly"
