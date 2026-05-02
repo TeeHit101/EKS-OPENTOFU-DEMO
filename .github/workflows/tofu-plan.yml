@@ -1,0 +1,70 @@
+name: 'OpenTofu CI - Plan'
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'envs/**'
+      - 'modules/**'
+      - '.github/workflows/tofu-plan.yml'
+
+env:
+  AWS_REGION: eu-north-1
+
+permissions:
+  contents: read
+  id-token: write  # Required for OIDC authentication
+  pull-requests: write # Required to post comments
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708  # v5.1.1
+        with:
+          role-to-assume: arn:aws:iam::936777225880:role/GitHubActionsTerraformPlan
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: OpenTofu - Setup Tofu
+        uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f  # v1.0.8
+        with:
+          tofu_version: '1.11.2'
+
+      - name: Execute OpenTofu init in envs/test
+        working-directory: envs/test
+        run: tofu init
+
+      - name: Execute OpenTofu Plan in envs/test
+        id: plan
+        working-directory: envs/test
+        run: |
+          tofu plan -no-color -out=tfplan
+          tofu show -no-color tfplan > plan_output.txt
+
+      - name: Post Plan to PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('envs/test/plan_output.txt', 'utf8');
+            const output = `#### OpenTofu Plan 📖
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
+            
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
