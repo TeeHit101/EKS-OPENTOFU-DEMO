@@ -25,7 +25,7 @@ locals {
   trusted_principals = length(var.github_repositories) > 0 ? var.github_repositories : [data.aws_iam_session_context.current.issuer_arn]
 
   # GitHub OIDC Configuration - GitHub OIDC `sub` is `repo:OWNER/REPO:...`
-  github_repositories = ["repo:*/EKS-OPENTOFU-DEMO:environment:${var.environment}"]
+  github_repositories = ["repo:TeeHit101/EKS-OPENTOFU-DEMO:environment:${var.environment}"]
 
   tags = {
     Owner       = var.org_prefix
