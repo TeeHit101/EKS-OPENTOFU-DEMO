@@ -284,4 +284,18 @@ module "addons" {
     aws_eks_cluster.default,
     module.kms,
   ]
-}
+  }
+
+  module "monitoring" {
+  source = "./monitoring"
+
+  cluster_name            = aws_eks_cluster.default.name
+  system_node_group_names = local.system_node_group_names
+  tags                    = local.common_tags
+
+  depends_on = [
+    aws_eks_node_group.default,
+    aws_eks_cluster.default,
+    module.addons,
+  ]
+  }
