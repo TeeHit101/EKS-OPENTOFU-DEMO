@@ -25,6 +25,27 @@ locals {
   } : {}
 }
 
+resource "random_password" "grafana_admin" {
+  length  = 16
+  special = true
+}
+
+resource "kubernetes_secret" "grafana_admin" {
+  metadata {
+    name      = "grafana-admin-credentials"
+    namespace = var.namespace
+  }
+
+  data = {
+    admin-user     = "admin"
+    admin-password = random_password.grafana_admin.result
+  }
+
+  type = "Opaque"
+
+  depends_on = [helm_release.prometheus_stack] # Ensure namespace exists if created by helm
+}
+
 resource "helm_release" "prometheus_stack" {
   name             = "kube-prometheus-stack"
   repository       = "https://prometheus-community.github.io/helm-charts"
@@ -57,9 +78,13 @@ resource "helm_release" "prometheus_stack" {
         }
       }
       grafana = {
-        "adminPassword" = "prom-operator"
-        affinity        = local.affinity
-        tolerations     = local.tolerations
+        admin = {
+          existingSecret = "grafana-admin-credentials"
+          userKey        = "admin-user"
+          passwordKey    = "admin-password"
+        }
+        affinity    = local.affinity
+        tolerations = local.tolerations
         persistence = {
           enabled          = true
           storageClassName = "gp3"
