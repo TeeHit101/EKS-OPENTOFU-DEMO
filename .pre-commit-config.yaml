@@ -43,3 +43,8 @@ repos:
       - id: editorconfig-checker
         alias: ec
         name: Making sure files adhere to editorconfig
+
+  - repo: https://github.com/tofuutils/pre-commit-opentofu
+    rev: v2.3.0
+    hooks:
+      - id: tofu_fmt
